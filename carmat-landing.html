@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>DataCouch – Car Mat Vision AI</title>
+  <!-- Google Fonts: Space Grotesk, Bebas Neue, DM Sans -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:      #08111f;
+      --ink-mid:  #0f1e35;
+      --ink-soft: #162540;
+      --rust:     #e05c2a;
+      --rust-d:   #c04820;
+      --amber:    #f59e0b;
+      --sky:      #38bdf8;
+      --white:    #f4f7ff;
+      --muted:    #6888aa;
+      --card:     rgba(255,255,255,0.035);
+      --border:   rgba(255,255,255,0.08);
+      --green:    #10b981;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--ink);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* Subtle scanline texture */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+      pointer-events: none; z-index: 1000; opacity: 0.4;
+    }
+
+    /* ---------- NAVIGATION ---------- */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.7rem 5%; background: rgba(8,17,31,0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      display: flex; align-items: center; text-decoration: none;
+      background: rgba(255, 255, 255, 0); /* Light background to ensure dark logo visibility */
+      padding: 0.3rem 0.6rem; border-radius: 8px; 
+    }
+    .logo img {
+      height: 44px; /* Larger logo height */
+      width: auto; display: block; object-fit: contain;
+    }
+
+    .nav-right { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-right a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.88rem; font-weight: 400; transition: color 0.2s;
+    }
+    .nav-right a:hover { color: var(--white); }
+    /* REMOVED: .nav-btn (Read Case Study button in nav) */
+    .nav-btn {
+      display: none; /* hidden: original "Read Case Study" link removed */
+    }
+
+    /* ---------- HERO ---------- */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
+      padding: 9rem 5% 5rem; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(-55deg, transparent 0px, transparent 60px, rgba(224,92,42,0.04) 60px, rgba(224,92,42,0.04) 61px);
+      pointer-events: none;
+    }
+    .orb-a, .orb-b {
+      position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none;
+    }
+    .orb-a { width: 500px; height: 500px; top: -100px; right: -80px; background: radial-gradient(circle, rgba(224,92,42,0.2) 0%, transparent 65%); animation: breathe 10s ease-in-out infinite alternate; }
+    .orb-b { width: 380px; height: 380px; bottom: 0; left: 5%; background: radial-gradient(circle, rgba(56,189,248,0.14) 0%, transparent 65%); animation: breathe 13s ease-in-out 2s infinite alternate-reverse; }
+    @keyframes breathe { from { transform: scale(1); } to { transform: scale(1.2) translate(20px, -20px); } }
+
+    .hero-eyebrow {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.2em; text-transform: uppercase; color: var(--rust);
+      margin-bottom: 1.4rem; display: flex; align-items: center; gap: 0.7rem;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero-eyebrow::before { content: ''; display: block; width: 28px; height: 2px; background: var(--rust); }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif; font-size: clamp(3.5rem, 7vw, 7.5rem);
+      line-height: 0.95; letter-spacing: 0.01em; max-width: 860px;
+      margin-bottom: 1.8rem; animation: fadeUp 0.7s 0.08s ease both;
+    }
+    h1 em { color: var(--rust); font-style: normal; }
+    h1 .line-sky { color: var(--sky); }
+
+    .hero-desc {
+      font-size: 1.05rem; color: var(--muted); max-width: 500px; line-height: 1.72;
+      margin-bottom: 2.6rem; animation: fadeUp 0.7s 0.16s ease both;
+    }
+    .hero-ctas {
+      display: flex; gap: 1rem; flex-wrap: wrap; animation: fadeUp 0.7s 0.24s ease both;
+    }
+    .btn-rust {
+      background: var(--rust); color: #fff; padding: 0.9rem 2rem;
+      border-radius: 8px; font-weight: 500; font-size: 0.95rem;
+      border: none; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s;
+      box-shadow: 0 0 28px rgba(224,92,42,0.35);
+    }
+    .btn-rust:hover { background: var(--rust-d); transform: translateY(-2px); box-shadow: 0 0 40px rgba(224,92,42,0.55); }
+    .btn-outline {
+      background: transparent; color: var(--white); padding: 0.9rem 2rem; border-radius: 8px;
+      font-weight: 400; font-size: 0.95rem; border: 1px solid var(--border); cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s;
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.04); }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(22px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Rest of the styles remain identical to your original design */
+    .ticker-strip { background: var(--rust); padding: 0.65rem 0; overflow: hidden; white-space: nowrap; border-top: 1px solid rgba(255,255,255,0.15); border-bottom: 1px solid rgba(255,255,255,0.15); }
+    .ticker-inner { display: inline-flex; animation: ticker 22s linear infinite; }
+    .ticker-item { font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: #fff; padding: 0 2.5rem; }
+    .ticker-sep { color: rgba(255,255,255,0.4); }
+    @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--border); }
+    .stat-cell { padding: 2.5rem 2rem; border-right: 1px solid var(--border); text-align: center; }
+    .stat-cell:last-child { border-right: none; }
+    .sv { font-family: 'Bebas Neue', sans-serif; font-size: 3.5rem; line-height: 1; color: var(--white); }
+    .sv .accent { color: var(--rust); }
+    .sl { font-size: 0.78rem; color: var(--muted); margin-top: 0.4rem; letter-spacing: 0.04em; }
+
+    section { padding: 6rem 5%; position: relative; }
+    .section-tag { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--rust); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem; }
+    .section-tag::before { content:''; display:block; width:20px; height:1.5px; background:var(--rust); }
+    .section-h { font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.4rem, 4.5vw, 4rem); line-height: 1; letter-spacing: 0.02em; margin-bottom: 1rem; }
+    .section-sub { color: var(--muted); font-size: 1rem; max-width: 480px; line-height: 1.7; margin-bottom: 3.5rem; }
+
+    .challenges-bg { background: var(--ink-mid); }
+    .chal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; background: var(--border); }
+    .chal-card { background: var(--ink-mid); padding: 2rem 1.8rem; position: relative; overflow: hidden; transition: background 0.3s; }
+    .chal-card:hover { background: var(--ink-soft); }
+    .chal-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--rust); transform: scaleX(0); transform-origin: left; transition: transform 0.35s; }
+    .chal-card:hover::after { transform: scaleX(1); }
+    .chal-num { font-family: 'Bebas Neue', sans-serif; font-size: 3.5rem; line-height: 1; color: rgb(255, 255, 255); margin-bottom: 0.8rem; }
+    .chal-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.6rem; color: var(--white); }
+    .chal-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.65; }
+
+    .sol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .sol-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; display: flex; gap: 1.2rem; transition: all 0.25s; }
+    .sol-card:hover { border-color: rgba(224,92,42,0.3); transform: translateY(-3px); }
+    .sol-icon { width: 46px; height: 46px; flex-shrink: 0; background: rgba(224,92,42,0.12); border: 1px solid rgba(224,92,42,0.25); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+    .sol-text h3 { font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .sol-text p { font-size: 0.84rem; color: var(--muted); line-height: 1.6; }
+
+    .jetson-strip { background: linear-gradient(135deg, var(--ink-soft) 0%, rgba(56,189,248,0.06) 100%); border: 1px solid rgba(56,189,248,0.15); border-radius: 16px; padding: 2.5rem 3rem; display: flex; align-items: center; gap: 2.5rem; margin-top: 2rem; flex-wrap: wrap; }
+    .jetson-badge { background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3); border-radius: 100px; padding: 0.3rem 1rem; font-size: 0.72rem; font-weight: 600; color: var(--sky); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+    .jetson-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .jetson-desc { font-size: 0.87rem; color: var(--muted); line-height: 1.6; }
+    .jetson-specs { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .jspec { font-size: 0.78rem; color: var(--sky); background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.15); border-radius: 6px; padding: 0.3rem 0.8rem; }
+
+    .flow-steps { display: flex; flex-direction: column; }
+    .flow-step { display: flex; gap: 2rem; align-items: flex-start; padding: 2rem 0; border-bottom: 1px solid var(--border); position: relative; }
+    .flow-step:last-child { border-bottom: none; }
+    .step-num-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .step-num { width: 44px; height: 44px; background: var(--rust); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.9rem; color: #fff; flex-shrink: 0; }
+    .step-line { width: 1px; flex: 1; min-height: 30px; background: linear-gradient(to bottom, var(--rust), transparent); margin-top: 4px; }
+    .flow-step:last-child .step-line { display: none; }
+    .step-body h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .step-body p { font-size: 0.87rem; color: var(--muted); line-height: 1.65; }
+
+    .results-bg { background: var(--ink-mid); }
+    .result-table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    thead tr { background: rgba(224,92,42,0.12); }
+    th { padding: 1rem 1.4rem; font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rust); text-align: left; border-bottom: 1px solid var(--border); }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.2s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.025); }
+    td { padding: 1rem 1.4rem; color: var(--muted); }
+    td:first-child { color: var(--white); font-weight: 400; }
+    .td-before { color: var(--amber) !important; }
+    .td-after  { color: var(--green) !important; font-weight: 500 !important; }
+    .td-imp    { color: var(--sky) !important; font-weight: 500 !important; }
+
+    .insights-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+    .insight-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; transition: all 0.25s; }
+    .insight-card:hover { border-color: rgba(224,92,42,0.25); transform: translateY(-3px); }
+    .ins-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .insight-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .insight-card p { font-size: 0.84rem; color: var(--muted); line-height: 1.6; }
+
+    /* Removed entire CTA section (casestudy) but kept footer */
+    .cta-section {
+      display: none; /* fully removed the "Read Full Case Study" section as requested */
+    }
+
+    footer { padding: 2.5rem 5%; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+    .footer-logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+    .footer-logo span { color: var(--rust); }
+    footer p { font-size: 0.78rem; color: var(--muted); }
+
+    .reveal { opacity:0; transform:translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+
+    @media(max-width:768px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .sol-grid, .insights-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; text-align: center; }
+      .jetson-strip { flex-direction: column; gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav>
+  <a href="#" class="logo">
+    <!-- Logo with increased size and light background for visibility -->
+    <img src="DataCouch White.svg" alt="DataCouch logo" />
+  </a>
+  <div class="nav-right">
+    <a href="#solution">Solution</a>
+    <a href="#results">Results</a>
+    <a href="#insights">Insights</a>
+    <!-- "Read Case Study" button removed from nav -->
+  </div>
+</nav>
+
+<!-- HERO SECTION -->
+<section class="hero" id="home">
+  <div class="orb-a"></div>
+  <div class="orb-b"></div>
+  <div class="hero-eyebrow">Computer Vision · Manufacturing QA</div>
+  <h1>
+    Real-Time<br/>
+    <em>Vision AI</em><br/>
+    <span class="line-sky">for Car Mat</span><br/>
+    Production
+  </h1>
+  <p class="hero-desc">
+    Fault detection at the source. Operator efficiency tracking in real time. 
+    Powered by <strong style="color:var(--sky)">NVIDIA Jetson Orin Nano</strong> — deployed on your existing factory floor.
+  </p>
+  <div class="hero-ctas">
+    <!-- UPDATED: Button opens the dedicated video page in a new tab -->
+    <button onclick="window.open('video.html', '_blank')" class="btn-rust">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      See Demo Video
+    </button>
+    <!-- Removed "Read Case Study" secondary button -->
+  </div>
+</section>
+
+<!-- TICKER STRIP -->
+<div class="ticker-strip">
+  <div class="ticker-inner">
+    <span class="ticker-item">80% Earlier Defect Detection <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">60% Rework Reduction <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">NVIDIA Jetson Orin Nano <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Real-Time Supervisor Dashboard <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Zero Workflow Disruption <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Edge AI Inference <span class="ticker-sep">·</span></span>
+    <!-- Duplicated for seamless loop -->
+    <span class="ticker-item">80% Earlier Defect Detection <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">60% Rework Reduction <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">NVIDIA Jetson Orin Nano <span class="ticker-sep">·</span></span>
+    <span class="ticker-item">Real-Time Supervisor Dashboard <span class="ticker-sep">·</span></span>
+  </div>
+</div>
+
+<!-- STATS ROW -->
+<div class="stats-row reveal">
+  <div class="stat-cell"><div class="sv"><span class="accent">80</span>%</div><div class="sl">Earlier Defect Detection</div></div>
+  <div class="stat-cell"><div class="sv"><span class="accent">60</span>%</div><div class="sl">Rework Rate Reduction</div></div>
+  <div class="stat-cell"><div class="sv" style="font-size:2.4rem; color:var(--sky);">IN PRODUCTION</div><div class="sl">Real-Time Dashboard</div></div>
+  <div class="stat-cell"><div class="sv" style="font-size:2.2rem; color:var(--sky);">Jetson</div><div class="sl">NVIDIA Orin Nano Edge GPU</div></div>
+</div>
+
+<!-- REMAINING PAGE SECTIONS (identical to original) except case study completely removed -->
+<section class="challenges-bg" id="challenges">
+  <div class="section-tag">The Problem</div>
+  <h2 class="section-h">What Manual QC<br/>Was Costing</h2>
+  <p class="section-sub">End-of-line inspection left defects hidden until it was too late — and management flying blind on efficiency.</p>
+  <div class="chal-grid reveal">
+    <div class="chal-card"><div class="chal-num">01</div><h3>Late Defect Discovery</h3><p>Tears, smudges, and misalignments found only at final inspection — after full assembly cost was already incurred.</p></div>
+    <div class="chal-card"><div class="chal-num">02</div><h3>High Rework & Scrap</h3><p>~12% of mats required rework or scrapping. Each rejection at the end of the line meant maximum material and labour loss.</p></div>
+    <div class="chal-card"><div class="chal-num">03</div><h3>Zero Performance Visibility</h3><p>No real-time view of operator efficiency or defect trends. Supervisors relied on end-of-shift reports that were already outdated.</p></div>
+    <div class="chal-card"><div class="chal-num">04</div><h3>Production Bottlenecks</h3><p>Manual final-stage checking became the slowest step on the line, throttling throughput under tight delivery schedules.</p></div>
+  </div>
+</section>
+
+<section id="solution">
+  <div class="section-tag">The Solution</div>
+  <h2 class="section-h">Vision AI at Every<br/>Checkpoint</h2>
+  <p class="section-sub">Cameras at the vacuum transfer station, stitching, and branding stages — catching faults the moment they occur.</p>
+  <div class="sol-grid reveal">
+    <div class="sol-card"><div class="sol-icon">🎯</div><div class="sol-text"><h3>Fault Detection at Source</h3><p>Cameras at the vacuum transfer station capture each mat after cutting. Shape distortions, tears, and debris trigger instant alerts before downstream operations.</p></div></div>
+    <div class="sol-card"><div class="sol-icon">📊</div><div class="sol-text"><h3>Operator Efficiency Tracking</h3><p>Defined presence zones log active vs idle time. Each mat cleared increments the operator's count. Supervisors see live utilization and hourly output.</p></div></div>
+    <div class="sol-card"><div class="sol-icon">🔍</div><div class="sol-text"><h3>Multi-Checkpoint Validation</h3><p>Only mats passing all vision checkpoints proceed to final packaging — eliminating the traditional bottleneck of manual end-of-line inspection.</p></div></div>
+    <div class="sol-card"><div class="sol-icon">📡</div><div class="sol-text"><h3>Live Supervisor Dashboard</h3><p>Real-time utilization metrics and defect trend data delivered to a supervisor dashboard — enabling performance coaching, not just monitoring.</p></div></div>
+  </div>
+  <div class="jetson-strip reveal">
+    <div style="flex-shrink:0"><div class="jetson-badge">⚡ Edge AI Hardware</div></div>
+    <div style="flex:1"><div class="jetson-title">Powered by NVIDIA Jetson Orin Nano</div><div class="jetson-desc">Industrial-grade GPU inference deployed directly on the factory floor. Low latency, no cloud dependency, minimal power draw — the Jetson Orin Nano handles real-time model inference without any central server overhead.</div><div class="jetson-specs"><span class="jspec">GPU-Accelerated Inference</span><span class="jspec">Edge Deployment</span><span class="jspec">Low Latency</span><span class="jspec">No Cloud Required</span><span class="jspec">Industrial Grade</span></div></div>
+  </div>
+</section>
+
+<section style="background: var(--ink-mid);" id="workflow">
+  <div class="section-tag">Implementation</div>
+  <h2 class="section-h">From Assessment<br/>to Full Rollout</h2>
+  <p class="section-sub">A structured four-phase deployment — validated alongside manual checks before transition.</p>
+  <div class="flow-steps reveal" style="max-width:700px;">
+    <div class="flow-step"><div class="step-num-wrap"><div class="step-num">01</div><div class="step-line"></div></div><div class="step-body"><h3>Assessment & Data Collection</h3><p>Production stages mapped. Sample defects across cutting, stitching, and branding operations collected and annotated for model training.</p></div></div>
+    <div class="flow-step"><div class="step-num-wrap"><div class="step-num">02</div><div class="step-line"></div></div><div class="step-body"><h3>Model Deployment on Jetson Orin Nano</h3><p>Optimized vision models deployed directly onto NVIDIA Jetson Orin Nano devices at cutting and stitching checkpoints for real-time edge inference.</p></div></div>
+    <div class="flow-step"><div class="step-num-wrap"><div class="step-num">03</div><div class="step-line"></div></div><div class="step-body"><h3>Integration & Testing</h3><p>Dashboards connected for live tracking. System ran in parallel with existing manual checks and validated for precision and reliability.</p></div></div>
+    <div class="flow-step"><div class="step-num-wrap"><div class="step-num">04</div></div><div class="step-body"><h3>Full Rollout & Training</h3><p>Operators and supervisors trained for seamless adoption. System transitioned to primary QC mechanism with zero production disruption.</p></div></div>
+  </div>
+</section>
+
+<section class="results-bg" id="results">
+  <div class="section-tag">Results & Impact</div>
+  <h2 class="section-h">Estimated Measurable Business<br/>Outcomes</h2>
+  <p class="section-sub">Before-and-after metrics across every dimension that matters to operations leadership.</p>
+  <div class="result-table-wrap reveal">
+    <table>
+      <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Improvement</th></tr></thead>
+      <tbody>
+        <tr><td>Late-stage defect detection</td><td class="td-before">100%</td><td class="td-after">&lt;20%</td><td class="td-imp">80% earlier detection</td></tr>
+        <tr><td>Rework rate</td><td class="td-before">~12%</td><td class="td-after">&lt;5%</td><td class="td-imp">60% reduction</td></tr>
+        <tr><td>Throughput visibility</td><td class="td-before">Manual checks</td><td class="td-after">Real-time dashboard</td><td class="td-imp">Immediate insights</td></tr>
+        <tr><td>AI hardware</td><td class="td-before">No AI inference</td><td class="td-after">NVIDIA Jetson Orin Nano</td><td class="td-imp">Edge GPU-accelerated AI</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="insights">
+  <div class="section-tag">Strategic Insights</div>
+  <h2 class="section-h">Why This Approach<br/>Works</h2>
+  <div class="insights-grid reveal">
+    <div class="insight-card"><div class="ins-icon">🎯</div><h3>Early Detection Saves Costs</h3><p>Catching defects close to the source minimizes downstream material waste, rework effort, and the cascading cost of late-stage rejection.</p></div>
+    <div class="insight-card"><div class="ins-icon">📈</div><h3>Transparent Metrics Boost Output</h3><p>Real-time dashboards give supervisors actionable insight into operator performance — improving productivity without intrusive micromanagement.</p></div>
+    <div class="insight-card"><div class="ins-icon">⚡</div><h3>Edge AI = Sustainable Scale</h3><p>NVIDIA Jetson Orin Nano delivers industrial inference at the edge — low power, low latency, and fully adaptable to other product lines.</p></div>
+  </div>
+</section>
+
+<!-- FULL CASE STUDY SECTION COMPLETELY REMOVED (cta-section display:none) -->
+<!-- No download PDF button, no "Read Full Case Study" heading, no link. -->
+
+<footer>
+  <div class="footer-logo">
+    <img src="/Users/musab/Downloads/Logo White.svg" alt="DataCouch" style="height:28px; width:auto; display:block;" />
+    &nbsp;·&nbsp; <span style="color:var(--muted); font-weight:300; font-size:0.85rem; font-family:'DM Sans',sans-serif;">Creating Infinite Possibilities</span>
+  </div>
+  <!-- YEAR CHANGED TO 2026 per request -->
+  <p>Car Mat Vision QA · NVIDIA Jetson Orin Nano · © 2026</p>
+</footer>
+
+<script>
+  // Scroll reveal animation
+  const revealElements = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  revealElements.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
